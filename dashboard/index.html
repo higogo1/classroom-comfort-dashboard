@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교실 쾌적도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+<script>
+  // 저장된 테마를 그리기 전에 적용합니다. 기본은 어두운 화면입니다.
+  try { const t = localStorage.getItem('pl2-theme') || 'dark'; if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) { document.documentElement.dataset.theme = 'dark'; }
+</script>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="./" aria-label="교실 쾌적도 처음 화면">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="8.5" r="2" fill="currentColor"/><circle cx="12" cy="15.5" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
+      <span class="brand-text"><span class="brand-kicker">CLASSROOM COMFORT</span><span class="app-name">교실 쾌적도</span></span>
+    </a>
+    <fieldset class="pills" id="range-pick">
+      <legend class="sr-only">그래프 기간</legend>
+      <label><input type="radio" name="range" value="300"><span>5분</span></label>
+      <label><input type="radio" name="range" value="600" checked><span>10분</span></label>
+      <label><input type="radio" name="range" value="1800"><span>30분</span></label>
+      <label><input type="radio" name="range" value="3600"><span>1시간</span></label>
+    </fieldset>
+    <div class="bar-actions">
+      <button type="button" id="pause-btn" class="btn ghost" aria-pressed="false">화면 갱신 멈춤</button>
+      <label class="theme-pick"><span class="sr-only">화면 테마</span>
+        <select id="theme-select">
+          <option value="dark">어둡게</option>
+          <option value="light">밝게</option>
+          <option value="system">시스템 테마</option>
+        </select>
+      </label>
+      <a class="btn ghost" href="wiring.html">배선도</a>
+      <a class="btn ghost" href="#help">도움말</a>
+    </div>
+    <p id="link-pill" class="link-block pill-wait" role="status">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="link-lines"><span class="link-title">보드 연결</span><span id="link-text">브리지에 연결하는 중</span></span>
+    </p>
+  </div>
+</header>
+
+<div id="paused-banner" class="banner" hidden>화면 갱신을 멈췄습니다. 데이터는 계속 받고 있으며, 다시 누르면 최신 값으로 바뀝니다.</div>
+<div id="sim-banner" class="banner banner-sim" hidden>시뮬레이션 모드입니다. 화면의 숫자는 가상 보드가 만든 값이며 실제 측정값이 아닙니다. 버튼을 눌러도 실제 보드는 움직이지 않습니다.</div>
+
+<main id="main">
+  <section class="hero" aria-labelledby="summary-line">
+    <div class="hero-text">
+      <h2 id="summary-line" class="headline">값을 기다리는 중이에요.</h2>
+      <p id="summary-sub" class="hero-sub">보드에서 첫 상태가 오면 표시됩니다.</p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" id="stop-btn" class="btn outline-danger" data-needs-link>모두 끄기 (STOP)</button>
+      <a class="btn outline" href="wiring.html">배선도 보기</a>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <p id="control-lock" class="lock" hidden></p>
+
+    <fieldset class="mode-cards" id="mode-group" data-needs-link>
+      <legend class="sr-only">신호등 판정 방식</legend>
+      <label class="mode-card"><input type="radio" name="mode" value="1">
+        <span class="mode-icon" aria-hidden="true">A</span>
+        <span class="mode-text"><b>자동 판정</b><small>적정이면 초록 · 벗어나면 빨강 깜박임, 부저, LCD 경고</small></span>
+      </label>
+      <label class="mode-card"><input type="radio" name="mode" value="0">
+        <span class="mode-icon" aria-hidden="true">M</span>
+        <span class="mode-text"><b>직접 지정</b><small>고른 색만 켜고 경보는 내지 않음</small></span>
+      </label>
+    </fieldset>
+
+    <section aria-labelledby="h-metrics">
+      <h2 id="h-metrics" class="sr-only">측정값</h2>
+      <div class="tiles">
+        <article class="tile" id="tile-temp">
+          <h3 class="tile-name">온도 · °C</h3>
+          <p class="tile-value"><span data-v>–</span></p>
+          <p class="chip" data-chip hidden></p>
+          <p class="tile-note" data-note>온습도 센서 DHT11 · 오차 약 ±2°C</p>
+        </article>
+        <article class="tile" id="tile-hum">
+          <h3 class="tile-name">습도 · %</h3>
+          <p class="tile-value"><span data-v>–</span></p>
+          <p class="chip" data-chip hidden></p>
+          <p class="tile-note" data-note>온습도 센서 DHT11 · 오차 약 ±5%</p>
+        </article>
+        <article class="tile" id="tile-alarm">
+          <h3 class="tile-name">경보</h3>
+          <p class="tile-value"><span data-v>–</span></p>
+          <p class="chip" data-chip hidden></p>
+          <p class="tile-note" data-note>범위를 벗어나면 빨강 깜박임·부저·LCD 문구</p>
+        </article>
+        <article class="tile" id="tile-di">
+          <h3 class="tile-name">불쾌지수 · 참고</h3>
+          <p class="tile-value"><span data-v>–</span></p>
+          <p class="tile-note" data-note>신호등 판정에는 쓰지 않습니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="row3" aria-label="추세와 보드 화면">
+      <figure class="panel chart">
+        <figcaption class="panel-title">온도 추세 <span class="title-sub">· 점선은 적정 범위</span></figcaption>
+        <div class="chart-box" id="chart-temp"></div>
+      </figure>
+      <figure class="panel chart">
+        <figcaption class="panel-title">습도 추세 <span class="title-sub">· 점선은 적정 범위</span></figcaption>
+        <div class="chart-box" id="chart-hum"></div>
+      </figure>
+      <section class="panel board" aria-labelledby="h-board">
+        <p id="buzz-badge" class="badge">경보음 켜짐</p>
+        <h2 id="h-board" class="panel-title">보드 화면</h2>
+        <div class="board-row">
+          <div class="lamp" role="img" id="lamp" aria-label="신호등: 정보 없음">
+            <span class="bulb red" data-sig="1"></span>
+            <span class="bulb green" data-sig="2"></span>
+          </div>
+          <div class="lcd" aria-label="LCD 화면 미리보기">
+            <span id="lcd-line1" class="lcd-line">                </span>
+            <span id="lcd-line2" class="lcd-line">                </span>
+          </div>
+        </div>
+        <p id="summary-lcd" class="board-note">LCD 미리보기는 보드가 보낸 상태로 다시 그린 것입니다. 실제 화면은 눈으로 확인하세요.</p>
+      </section>
+    </section>
+
+    <section class="row2" aria-label="제어와 기록">
+      <section class="panel control" aria-labelledby="h-control">
+        <h2 id="h-control" class="panel-title">제어</h2>
+
+        <fieldset class="group">
+          <legend>색 직접 지정</legend>
+          <p class="hint">누르면 자동 판정이 꺼집니다.</p>
+          <div class="sig-buttons">
+            <button type="button" class="btn sig" data-signal="1" data-needs-link><span class="sw sw-red" aria-hidden="true"></span>빨강</button>
+            <button type="button" class="btn sig" data-signal="2" data-needs-link><span class="sw sw-green" aria-hidden="true"></span>초록</button>
+            <button type="button" class="btn sig" data-signal="0" data-needs-link><span class="sw sw-off" aria-hidden="true"></span>끄기</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>부저</legend>
+          <p class="hint">자동 판정 중 범위를 벗어나면 0.5초마다 짧게 울립니다.</p>
+          <div class="row">
+            <button type="button" id="buzz-btn" class="btn" aria-pressed="true" data-needs-link>경보음 켜짐</button>
+            <button type="button" id="beep-btn" class="btn ghost" data-needs-link>시험 소리</button>
+          </div>
+        </fieldset>
+
+        <form id="range-form" class="group" novalidate>
+          <fieldset>
+            <legend>적정 범위</legend>
+            <p class="hint">기본값은 학교보건법 시행규칙의 교실 기준(18–28°C, 30–80%)입니다. 하한은 상한보다 작아야 합니다.</p>
+            <div class="field-grid">
+              <div class="field" data-min="0" data-max="50" data-step="1">
+                <label for="temp_low">온도 하한 °C</label>
+                <div class="stepper"><button type="button" class="btn icon" data-step="-1" aria-label="온도 하한 낮추기">−</button><input id="temp_low" type="number" inputmode="numeric" min="0" max="50" step="1" aria-describedby="temp_low-err"><button type="button" class="btn icon" data-step="1" aria-label="온도 하한 높이기">+</button></div>
+                <p class="err" id="temp_low-err"></p>
+              </div>
+              <div class="field" data-min="0" data-max="50" data-step="1">
+                <label for="temp_high">온도 상한 °C</label>
+                <div class="stepper"><button type="button" class="btn icon" data-step="-1" aria-label="온도 상한 낮추기">−</button><input id="temp_high" type="number" inputmode="numeric" min="0" max="50" step="1" aria-describedby="temp_high-err"><button type="button" class="btn icon" data-step="1" aria-label="온도 상한 높이기">+</button></div>
+                <p class="err" id="temp_high-err"></p>
+              </div>
+              <div class="field" data-min="0" data-max="100" data-step="5">
+                <label for="hum_low">습도 하한 %</label>
+                <div class="stepper"><button type="button" class="btn icon" data-step="-1" aria-label="습도 하한 낮추기">−</button><input id="hum_low" type="number" inputmode="numeric" min="0" max="100" step="1" aria-describedby="hum_low-err"><button type="button" class="btn icon" data-step="1" aria-label="습도 하한 높이기">+</button></div>
+                <p class="err" id="hum_low-err"></p>
+              </div>
+              <div class="field" data-min="0" data-max="100" data-step="5">
+                <label for="hum_high">습도 상한 %</label>
+                <div class="stepper"><button type="button" class="btn icon" data-step="-1" aria-label="습도 상한 낮추기">−</button><input id="hum_high" type="number" inputmode="numeric" min="0" max="100" step="1" aria-describedby="hum_high-err"><button type="button" class="btn icon" data-step="1" aria-label="습도 상한 높이기">+</button></div>
+                <p class="err" id="hum_high-err"></p>
+              </div>
+            </div>
+            <div class="row">
+              <button type="submit" class="btn primary" data-needs-link>범위 적용</button>
+              <button type="button" id="range-reset" class="btn ghost">보드 값으로 되돌리기</button>
+            </div>
+          </fieldset>
+        </form>
+
+        <form id="lcd-form" class="group" novalidate>
+          <fieldset>
+            <legend>LCD 안내 문구</legend>
+            <label for="lcd-text" class="hint">둘째 줄에 표시할 문구 · 영문·숫자 16자 · 경보 중에는 경보 문구가 먼저</label>
+            <div class="ask">
+              <input id="lcd-text" type="text" maxlength="16" autocomplete="off" spellcheck="false" placeholder="예: Open window" aria-describedby="lcd-count lcd-err lcd-now">
+              <button type="submit" class="btn primary" data-needs-link>보내기 →</button>
+            </div>
+            <p class="hint"><span id="lcd-count">0/16</span> · <span id="lcd-now">지금 표시: 없음</span></p>
+            <p class="err" id="lcd-err"></p>
+            <div class="row"><button type="button" id="lcd-clear" class="btn ghost" data-needs-link>문구 지우기</button></div>
+          </fieldset>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="h-log">
+        <h2 id="h-log" class="panel-title">보낸 명령 <span class="title-sub">· 이 탭에서</span></h2>
+        <p id="cmd-status" class="sr-only" role="status" aria-live="polite"></p>
+        <ol id="cmd-log" class="log"><li class="muted">아직 보낸 명령이 없습니다.</li></ol>
+        <details class="table-view">
+          <summary>측정값 표로 보기 (최근 20개)</summary>
+          <div class="tbl-wrap">
+            <table>
+              <caption class="sr-only">최근 측정값</caption>
+              <thead><tr><th scope="col">시각</th><th scope="col">온도 °C</th><th scope="col">습도 %</th><th scope="col">불쾌지수</th><th scope="col">경보</th><th scope="col">신호등</th></tr></thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+    </section>
+  </div>
+</main>
+
+<div id="alerts" class="sr-only" aria-live="polite"></div>
+
+<section id="help" class="help" aria-labelledby="h-help">
+  <div class="help-inner">
+    <h2 id="h-help" class="panel-title">도움말</h2>
+    <div class="help-grid">
+      <div>
+        <h3>판정 규칙</h3>
+        <ul>
+          <li><b>자동 판정</b>: 온도와 습도가 모두 적정 범위 안이면 초록불입니다. 하나라도 벗어나면 빨간불이 깜박이고 부저가 울리며 LCD에 <code>TEMP HIGH 29.0C</code> 같은 문구가 나옵니다.</li>
+          <li>다시 적정 범위로 돌아와도 3번(약 6초) 연속 적정이어야 초록불로 바뀝니다. 경계에서 깜박임이 반복되지 않게 하기 위해서입니다.</li>
+          <li><b>측정 대기</b>는 DHT11이 아직 값을 주지 않았거나 읽기에 실패한 상태입니다. 0°C가 아닙니다. 이때 자동 판정은 두 LED를 모두 끕니다.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>명령 결과</h3>
+        <ul>
+          <li><b>보드 적용됨</b>: 보드 프로그램이 명령을 받아 적용했습니다. LED와 부저가 실제로 동작했는지는 직접 확인하세요.</li>
+          <li><b>응답 없음</b>: 2초 안에 답이 없었습니다. 적용됐는지 알 수 없으니 상태를 확인한 뒤 다시 보내세요. 자동으로 다시 보내지 않습니다.</li>
+          <li><b>값 멈춤</b>: 3초 넘게 새 값이 없으면 제어를 막습니다. 이때 LED나 부저가 꺼졌다고 가정하지 마세요.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>연결이 안 될 때</h3>
+        <ul>
+          <li>Arduino 시리얼 모니터를 닫으세요. 같은 포트를 두 프로그램이 동시에 열 수 없습니다.</li>
+          <li>브리지 실행 창의 포트 번호가 맞는지 확인하세요 (<code>arduino-cli board list</code>).</li>
+          <li>"보드 회로가 PL2입니다"처럼 다른 회로 이름이 보이면 PL3 펌웨어를 업로드하세요.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="demo.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

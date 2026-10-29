@@ -1,0 +1,13 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/bridge/.venv/Scripts/python.exe",
+  "python.analysis.extraPaths": ["bridge"],
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "files.associations": { "*.ino": "cpp" },
+  "files.exclude": { "**/__pycache__": true },
+  "search.exclude": { "bridge/.venv": true },
+  // 홈 폴더 전체가 git 저장소라서, 상위 폴더 저장소를 쓰지 않게 합니다.
+  "git.openRepositoryInParentFolders": "never",
+  "editor.tabSize": 2,
+  "[python]": { "editor.tabSize": 4 }
+}

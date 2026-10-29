@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>배선도 · 교실 쾌적도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+<script>
+  try { const t = localStorage.getItem('pl2-theme') || 'dark'; if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) { document.documentElement.dataset.theme = 'dark'; }
+</script>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="./" aria-label="교실 쾌적도 대시보드로">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="8.5" r="2" fill="currentColor"/><circle cx="12" cy="15.5" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
+      <span class="brand-text"><span class="brand-kicker">CLASSROOM COMFORT</span><span class="app-name">교실 쾌적도</span></span>
+    </a>
+    <nav class="bar-actions" aria-label="페이지">
+      <a class="btn ghost" href="./">대시보드</a>
+      <a class="btn ghost" href="wiring.html" aria-current="page">배선도</a>
+      <a class="btn ghost" href="./#help">도움말</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wiring-layout">
+  <section class="panel" aria-labelledby="h-wiring">
+    <div class="panel-head">
+      <div>
+        <p class="eyebrow">회로 PL3 · 부품 하나씩 차례대로</p>
+        <h2 id="h-wiring">빵판 배선도</h2>
+      </div>
+      <div class="row">
+        <button type="button" id="first-btn" class="btn ghost">처음으로</button>
+        <button type="button" id="reset-btn" class="btn ghost">체크 모두 지우기</button>
+      </div>
+    </div>
+
+    <div class="step-bar">
+      <div class="step-nav">
+        <button type="button" id="prev-btn" class="btn">← 이전</button>
+        <button type="button" id="next-btn" class="btn primary">다음 →</button>
+      </div>
+      <label class="step-pick"><span class="sr-only">단계 이동</span>
+        <select id="step-select"></select>
+      </label>
+      <progress id="progress" value="0" max="7" aria-label="진행"></progress>
+    </div>
+
+    <div class="wiring-body">
+      <div id="wiring-sheet" class="sheet" tabindex="0" aria-label="배선도 그림. 초점이 있을 때 왼쪽·오른쪽 화살표로 단계를 옮깁니다."></div>
+      <div class="step-card">
+        <p id="step-kicker" class="eyebrow"></p>
+        <h3 id="step-title" class="step-title"></h3>
+        <p id="step-goal" class="step-goal"></p>
+        <ol id="step-body" class="check-list" aria-label="할 일"></ol>
+        <div id="step-tips"></div>
+        <p id="step-live" class="sr-only" role="status" aria-live="polite"></p>
+        <p class="note-sm">하나 꽂을 때마다 체크하세요. 그림의 주황 번호가 할 일 번호와 같습니다. 작은 화면에서는 그림을 옆으로 밀어 보세요.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="wiring-tables">
+    <section class="panel" aria-labelledby="h-parts">
+      <h2 id="h-parts">준비물</h2>
+      <ul id="part-list" class="part-list"></ul>
+      <p class="muted">선이 모자라면 꽂기 전에 멈추고 선생님께 말해요.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="h-all">
+      <h2 id="h-all">한눈에 보기</h2>
+      <p class="muted">다 꽂은 뒤 실물과 한 줄씩 맞춰 보세요.</p>
+      <div class="tbl-wrap">
+        <table id="all-table">
+          <thead><tr><th scope="col">단계</th><th scope="col">번호</th><th scope="col">할 일</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="wiring.js"></script>
+</body>
+</html>

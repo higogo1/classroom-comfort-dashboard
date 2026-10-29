@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bridge-sim",
+      "runtimeExecutable": "bridge/.venv/Scripts/python.exe",
+      "runtimeArgs": ["bridge/app.py", "--simulate", "--http-port", "8000"],
+      "port": 8000
+    }
+  ]
+}

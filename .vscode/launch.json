@@ -1,0 +1,50 @@
+{
+  // 실행 및 디버그(Ctrl+Shift+D)에서 고르고 F5로 시작합니다.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "브리지 디버그 (시뮬레이션)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/bridge/app.py",
+      "args": ["--simulate"],
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/bridge/.venv/Scripts/python.exe",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "브리지 디버그 (실제 보드)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/bridge/app.py",
+      "args": ["--port", "${input:comPort}"],
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/bridge/.venv/Scripts/python.exe",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "대시보드 열기 (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://127.0.0.1:8000/",
+      "webRoot": "${workspaceFolder}/dashboard"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "브리지(시뮬레이션) + 대시보드",
+      "configurations": ["브리지 디버그 (시뮬레이션)", "대시보드 열기 (Edge)"],
+      "stopAll": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "comPort",
+      "type": "promptString",
+      "description": "UNO가 연결된 COM 포트",
+      "default": "COM7"
+    }
+  ]
+}

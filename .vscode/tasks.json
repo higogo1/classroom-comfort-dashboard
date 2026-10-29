@@ -1,0 +1,75 @@
+{
+  // 터미널 > 작업 실행(Ctrl+Shift+P → "Tasks: Run Task")에서 고릅니다.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "브리지 실행 (시뮬레이션)",
+      "detail": "가상 PL3 보드로 http://127.0.0.1:8000 대시보드를 엽니다. 보드 없이 화면 작업할 때.",
+      "type": "process",
+      "command": "${workspaceFolder}/bridge/.venv/Scripts/python.exe",
+      "args": ["bridge/app.py", "--simulate"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": { "pattern": { "regexp": "^__never__$" }, "background": { "activesBegin": true, "beginsPattern": "Started server process", "endsPattern": "Uvicorn running on" } },
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "브리지 실행 (실제 보드)",
+      "detail": "PL3 펌웨어가 올라간 UNO의 COM 포트로 연결합니다. Arduino 시리얼 모니터는 먼저 닫으세요.",
+      "type": "process",
+      "command": "${workspaceFolder}/bridge/.venv/Scripts/python.exe",
+      "args": ["bridge/app.py", "--port", "${input:comPort}"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": { "pattern": { "regexp": "^__never__$" }, "background": { "activesBegin": true, "beginsPattern": "Started server process", "endsPattern": "Uvicorn running on" } }
+    },
+    {
+      "label": "브리지 스모크 테스트",
+      "detail": "켜져 있는 브리지에 명령 22가지를 보내 확인합니다. LED·부저가 동작해도 될 때만.",
+      "type": "process",
+      "command": "${workspaceFolder}/bridge/.venv/Scripts/python.exe",
+      "args": ["bridge/smoke_test.py", "8000"],
+      "options": { "cwd": "${workspaceFolder}", "env": { "PYTHONIOENCODING": "utf-8" } },
+      "problemMatcher": []
+    },
+    {
+      "label": "보드 포트 목록",
+      "type": "shell",
+      "command": "arduino-cli board list",
+      "problemMatcher": []
+    },
+    {
+      "label": "펌웨어 컴파일 (PL3)",
+      "type": "shell",
+      "command": "arduino-cli compile --fqbn arduino:avr:uno --warnings all firmware/PL3",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$gcc"],
+      "group": "build"
+    },
+    {
+      "label": "펌웨어 업로드 (PL3)",
+      "detail": "USB를 꽂기 전에 배선을 배선도와 대조했는지 확인하세요.",
+      "type": "shell",
+      "command": "arduino-cli upload --fqbn arduino:avr:uno -p ${input:comPort} firmware/PL3",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "펌웨어 컴파일 (PL3)",
+      "problemMatcher": []
+    },
+    {
+      "label": "브리지 가상환경 다시 만들기",
+      "detail": "다른 PC에서 처음 열었을 때 한 번 실행합니다.",
+      "type": "shell",
+      "command": "py -3 -m venv bridge/.venv; bridge/.venv/Scripts/python.exe -m pip install -r bridge/requirements.txt",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "comPort",
+      "type": "promptString",
+      "description": "UNO가 연결된 COM 포트 (\"보드 포트 목록\" 작업으로 확인)",
+      "default": "COM7"
+    }
+  ]
+}

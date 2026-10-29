@@ -1,0 +1,482 @@
+<title>UNO 대시보드 설계안</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: one reading column; each option = summary card row, then full-width circuit sheet + wiring table */
+:root{
+  --bg:#f2f5f3; --surface:#ffffff; --ink:#17221e; --muted:#56655f; --line:#d3dcd7;
+  --accent:#0d6b5b; --accent-ink:#ffffff; --copper:#a9581a; --warn:#9a5a00; --ok:#2d7a39; --chip:#e4efe9;
+  --sheet:#fbfcf8;
+  --f-body:"IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1513; --surface:#17201d; --ink:#e3ebe7; --muted:#9db0a8; --line:#2b3934;
+  --accent:#5cc4aa; --accent-ink:#0b1311; --copper:#e19a57; --warn:#e0a548; --ok:#7fcb88; --chip:#1f2b27; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1513; --surface:#17201d; --ink:#e3ebe7; --muted:#9db0a8; --line:#2b3934;
+  --accent:#5cc4aa; --accent-ink:#0b1311; --copper:#e19a57; --warn:#e0a548; --ok:#7fcb88; --chip:#1f2b27; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+.wrap{max-width:1180px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+h1,h2,h3{text-wrap:balance;line-height:1.3;margin:0}
+h1{font-size:clamp(26px,4vw,36px);font-weight:700}
+h2{font-size:22px;font-weight:700}
+h3{font-size:17px;font-weight:700}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+section{display:grid;gap:16px}
+header.top{display:grid;gap:12px}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.facts li{background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:13px}
+.facts b{font-family:var(--f-mono);font-weight:600}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.opt{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:10px;align-content:start;min-width:0}
+.opt .tag{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:12px;border-radius:999px;padding:2px 9px;border:1px solid var(--line);background:var(--chip);white-space:nowrap}
+.pill.rec{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pill.new{border-color:var(--copper);color:var(--copper);background:transparent}
+.opt ul{margin:0;padding-left:18px}
+.opt a{color:var(--accent);font-weight:500}
+.q{font-weight:500}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--copper);outline-offset:2px;border-radius:4px}
+.circuit{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:16px;min-width:0}
+.circuit-head{display:grid;gap:6px}
+.sheet{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--sheet)}
+.sheet svg{display:block;min-width:820px;width:100%;height:auto}
+.cols2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.cols2>*{min-width:0}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px}
+td code,.mono{font-family:var(--f-mono);font-size:12.5px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.25)}
+details{border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--surface)}
+summary{cursor:pointer;font-weight:600;min-height:24px}
+.note{border-left:3px solid var(--warn);padding:8px 12px;background:var(--chip);border-radius:0 6px 6px 0;font-size:14px}
+.note b{color:var(--warn)}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;align-items:stretch}
+.node{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:4px}
+.node .mono{color:var(--muted)}
+.std td:first-child{white-space:nowrap;font-family:var(--f-mono);font-size:12.5px}
+ol.qs{margin:0;padding-left:22px;display:grid;gap:8px}
+.toc{display:flex;flex-wrap:wrap;gap:8px}
+.toc a{display:inline-flex;align-items:center;min-height:32px;padding:4px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);text-decoration:none;color:var(--ink);font-size:14px}
+.toc a:hover{border-color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">피지컬AI · 10/29 웹 대시보드 준비</div>
+  <h1>UNO 키트로 만들 대시보드, 네 가지 안</h1>
+  <p class="muted">10/22 웹캠(C270·YOLO) 실습과 10/23 UNO 고급키트(SZH-EK013) 배선 자료를 기준으로 만들었습니다. 빵판 그림은 강의 사이트의 표기법을 따릅니다: 연두 띠 하나가 같은 금속판이고, 가운데 홈 양쪽은 분리되어 있으며, 모듈 핀은 이름으로 펼쳐 그렸습니다.</p>
+  <ul class="facts" aria-label="현재 하드웨어 조건">
+    <li>보드 <b>UNO R3 호환 1대</b></li>
+    <li>전원 <b>PC USB만</b> (외부 5V 없음)</li>
+    <li>한 번에 <b>회로 1개</b></li>
+    <li>암–수 점퍼 <b>10개</b></li>
+    <li>시리얼 <b>115200 · JSON 한 줄</b></li>
+    <li><b>D0/D1</b> 비움 · LCD는 <b>A4/A5</b></li>
+    <li>모터(SG90·28BYJ-48) <b>구동 보류</b></li>
+    <li>웹캠 <b>Logitech C270</b></li>
+  </ul>
+  <nav class="toc" aria-label="이 페이지 목차">
+    <a href="#options">서비스 안 비교</a><a href="#optA">A 책상 환경</a><a href="#optB">B 화분 돌봄</a><a href="#optC">C 교실 신호등</a><a href="#optD">D 비전 융합</a><a href="#arch">시스템 구조</a><a href="#std">ISO 9241 · WCAG 2.2</a><a href="#ask">정해야 할 것</a>
+  </nav>
+</header>
+
+<section id="options" aria-labelledby="h-options">
+  <h2 id="h-options">서비스 안 비교</h2>
+  <p class="muted">각 안은 대시보드가 답하는 질문 하나로 정의했습니다. 화면에 넣을 기능은 그 질문에 답하는지로 고릅니다.</p>
+  <div class="grid4">
+    <article class="opt">
+      <div class="tag"><span class="pill rec">추천 · 오늘 바로</span><span class="pill">P01 그대로</span></div>
+      <h3>A. 책상 환경·조명 도우미</h3>
+      <p class="q">“지금 내 책상은 공부하기 좋은 상태인가?”</p>
+      <ul><li>온도·습도(DHT11), 밝기(CdS), 손잡이(가변저항), 버튼</li><li>LED 수동/자동, 켜고 끄는 기준값</li><li>LCD에 상태 표시</li></ul>
+      <p class="muted">난이도 ★☆☆ · 새 배선 없음</p>
+      <a href="#optA">배선도 보기</a>
+    </article>
+    <article class="opt">
+      <div class="tag"><span class="pill new">새 회로 PL1</span></div>
+      <h3>B. 화분 돌봄 스테이션</h3>
+      <p class="q">“물통에 물이 남았고, 화분이 빛을 충분히 받았나?”</p>
+      <ul><li>수위 센서(물통 잔량 3단계), 밝기, 온습도</li><li>RGB LED로 상태 색 + 부저 알림</li><li>하루 일조 시간 누적</li></ul>
+      <p class="muted">난이도 ★★☆ · 암–수 10개 전부 사용</p>
+      <a href="#optB">배선도 보기</a>
+    </article>
+    <article class="opt">
+      <div class="tag"><span class="pill new">새 회로 PL2</span></div>
+      <h3>C. 교실 쾌적도 신호등</h3>
+      <p class="q">“지금 교실이 시끄럽거나 덥고 습한가?”</p>
+      <ul><li>소리 모듈(상대 소음), 온습도 → 불쾌지수</li><li>빨강·노랑·초록 LED 신호등</li><li>LCD에 안내 문구</li></ul>
+      <p class="muted">난이도 ★★☆ · 암–수 10개 전부 사용</p>
+      <a href="#optC">배선도 보기</a>
+    </article>
+    <article class="opt">
+      <div class="tag"><span class="pill">P01 + 웹캠</span></div>
+      <h3>D. 비전 × 환경 공간 모니터</h3>
+      <p class="q">“방에 사람이 있을 때만 적절히 밝고 쾌적한가?”</p>
+      <ul><li>C270 + YOLO 인원 수(PC에서 처리)</li><li>P01 센서값과 한 화면에서 결합</li><li>사람 있음 + 어두움 → LED 켜기 규칙</li></ul>
+      <p class="muted">난이도 ★★★ · 배선은 A와 동일</p>
+      <a href="#optD">구성 보기</a>
+    </article>
+  </div>
+  <div class="note"><b>지금은 보류할 조합.</b> RFID 출입(RC522는 3.3V 분압과 SPI 배선이 필요), 서보·스텝모터 블라인드(외부 5V 전원 없음), 화염·적외선 수신·도트매트릭스(실물 모델 미확인). 강의 자료의 조건을 그대로 따릅니다.</div>
+</section>
+
+<section id="optA" class="circuit" aria-labelledby="h-a">
+  <div class="circuit-head">
+    <div class="eyebrow">안 A · 회로 P01</div>
+    <h2 id="h-a">책상 환경·조명 도우미</h2>
+    <p>이미 조립해 둔 P01을 그대로 씁니다. 대시보드는 <span class="mono">state</span> 메시지의 <span class="mono">light_raw · pot_raw · button_pressed · temperature_c · humidity</span>를 보여 주고, <span class="mono">LED / AUTO / THRESH / STOP</span> 명령을 보냅니다.</p>
+  </div>
+  <div class="sheet" id="svgA"></div>
+  <div class="cols2">
+    <div><h3>대시보드 화면 구성</h3><ul>
+      <li>첫 줄 요약: “밝기 낮음 · 자동 조명 켜짐 · 26.1°C / 48%”</li>
+      <li>센서 카드 4개 + 최근 10분 추세선</li>
+      <li>조명 제어: 켜기 · 끄기 · 자동, 기준값 2개(켜는 값 &lt; 끄는 값)</li>
+      <li>연결 상태: 마지막 수신 3초 넘으면 경고</li></ul></div>
+    <div class="tbl" id="tblA"></div>
+  </div>
+</section>
+
+<section id="optB" class="circuit" aria-labelledby="h-b">
+  <div class="circuit-head">
+    <div class="eyebrow">안 B · 새 회로 PL1 (제안)</div>
+    <h2 id="h-b">화분 돌봄 스테이션</h2>
+    <p>K07 수위, K05 조도, K09 DHT11, K11 RGB, K12 부저 단품 배선을 한 빵판에 합친 제안입니다. RGB(D5·D6·D9)는 PWM이 필요하고, 부저 <span class="mono">tone()</span>은 Timer2라 D3·D11 PWM에만 영향을 줘서 서로 겹치지 않습니다.</p>
+  </div>
+  <div class="sheet" id="svgB"></div>
+  <div class="note"><b>수위 센서는 흙 수분 센서가 아닙니다.</b> 화분 옆 급수 물통에 꽂아 “마름 · 조금 · 충분” 세 단계로 보정해 쓰세요. 금속 무늬만 물에 닿게 하고, 보드·USB는 물에서 떨어뜨립니다. 측정할 때만 전원을 켜면 부식이 줄어듭니다.</div>
+  <div class="cols2">
+    <div><h3>대시보드 화면 구성</h3><ul>
+      <li>물통 잔량 3단계 표시와 보정 버튼(마른 상태/담근 상태 저장)</li>
+      <li>오늘 일조 시간 누적(밝기 기준값 이상인 시간)</li>
+      <li>상태 색: 초록 정상 · 노랑 확인 필요 · 빨강 물 부족 — 색과 함께 글자로도 표시</li>
+      <li>부저 알림 켜기/끄기, 조용한 시간대 설정</li></ul></div>
+    <div class="tbl" id="tblB"></div>
+  </div>
+</section>
+
+<section id="optC" class="circuit" aria-labelledby="h-c">
+  <div class="circuit-head">
+    <div class="eyebrow">안 C · 새 회로 PL2 (제안)</div>
+    <h2 id="h-c">교실 쾌적도 신호등</h2>
+    <p>K08 소리, K09 DHT11, P03의 세 LED 핀(D10·D11·D12), K15 LCD를 합친 제안입니다. 모듈 세 개는 모두 F–J 쪽에 두고, A–E 쪽에는 LED와 저항만 둡니다.</p>
+  </div>
+  <div class="sheet" id="svgC"></div>
+  <div class="note"><b>소리 값은 dB가 아닙니다.</b> 0–1023 상대값이므로 “평소 대비” 기준으로 보여 줍니다. 짧은 소리를 놓치지 않으려면 50ms 구간의 최대–최소 차이를 보내도록 펌웨어를 바꿉니다.</div>
+  <div class="cols2">
+    <div><h3>대시보드 화면 구성</h3><ul>
+      <li>불쾌지수 DI = 0.81T + 0.01H(0.99T − 14.3) + 46.3</li>
+      <li>소음 상대값 막대와 “평소 대비 +40%” 문구</li>
+      <li>신호등 상태 원격 지정(<span class="mono">SIGNAL 0–3</span>) + 자동 판정 모드</li>
+      <li>LCD 안내 문구 보내기(영문 16자 × 2줄, 새 명령 정의 필요)</li></ul></div>
+    <div class="tbl" id="tblC"></div>
+  </div>
+</section>
+
+<section id="optD" class="circuit" aria-labelledby="h-d">
+  <div class="circuit-head">
+    <div class="eyebrow">안 D · P01 + C270 웹캠</div>
+    <h2 id="h-d">비전 × 환경 공간 모니터</h2>
+    <p>빵판은 안 A(P01)와 같습니다. 웹캠은 PC에 따로 꽂고, 10/22에 만든 YOLO 추적·구역 진입 코드가 사람 수와 이벤트만 PC 연결 프로그램으로 넘깁니다. 대시보드는 두 데이터를 한 시간축에 겹쳐 보여 줍니다.</p>
+  </div>
+  <div class="flow" aria-label="안 D 데이터 흐름">
+    <div class="node"><b>C270 웹캠</b><span class="mono">USB → PC</span><span>YOLO person 검출 · 추적 ID · 구역 진입</span></div>
+    <div class="node"><b>UNO · P01</b><span class="mono">USB 115200 JSON</span><span>밝기 · 온습도 · 버튼 · LED 상태</span></div>
+    <div class="node"><b>PC 연결 프로그램</b><span class="mono">Python · FastAPI</span><span>두 입력을 합쳐 규칙 판단, 웹소켓으로 전달</span></div>
+    <div class="node"><b>웹 대시보드</b><span class="mono">브라우저</span><span>인원 수 + 환경 추세 + 자동 규칙 기록</span></div>
+  </div>
+  <div class="note"><b>개인정보.</b> 영상 프레임은 저장하거나 웹으로 보내지 않고 숫자(인원 수, 진입 횟수)만 넘기는 것을 기본으로 제안합니다. 화면에 “카메라 사용 중” 상태를 항상 표시합니다.</div>
+</section>
+
+<section id="arch" aria-labelledby="h-arch">
+  <h2 id="h-arch">시스템 구조 (공통)</h2>
+  <div class="flow">
+    <div class="node"><b>1. UNO 펌웨어</b><span>1초마다 <span class="mono">state</span> 전송, 명령엔 <span class="mono">ack/error</span> 응답</span></div>
+    <div class="node"><b>2. PC 연결 프로그램</b><span>COM 포트를 혼자 열고, 웹에 API·웹소켓 제공</span></div>
+    <div class="node"><b>3. 웹 대시보드</b><span>“전송 중 → 보드 적용(ack) → 오류”를 구분해 표시</span></div>
+  </div>
+  <p class="muted">대안: Chrome의 Web Serial API로 브라우저가 직접 포트를 엽니다. 설치는 간단하지만 Chrome·Edge에서만 되고, 탭 하나만 보드와 연결할 수 있습니다.</p>
+</section>
+
+<section id="std" aria-labelledby="h-std">
+  <h2 id="h-std">ISO 9241 · WCAG 2.2를 이 대시보드에 적용하면</h2>
+  <p class="muted">규격 조항을 이 프로젝트의 실제 화면 규칙으로 바꿨습니다. 강의 자료의 “null, 0, 연결 끊김을 섞지 않는다” 규칙도 여기에 들어갑니다.</p>
+  <div class="tbl"><table class="std">
+    <thead><tr><th scope="col">근거</th><th scope="col">이 대시보드의 규칙</th></tr></thead>
+    <tbody>
+      <tr><td>ISO 9241-11</td><td>사용자·목표·사용 환경을 먼저 정합니다(아래 질문). 효과성(정확한 상태 판단), 효율성(첫 화면에서 3초 안에 판단), 만족도를 측정 항목으로 둡니다.</td></tr>
+      <tr><td>9241-110 과업 적합성</td><td>첫 줄에 지금 상태를 한 문장으로 요약하고, 원시값은 그 아래에 둡니다.</td></tr>
+      <tr><td>9241-110 자기 기술성</td><td>모든 숫자에 단위와 범위를 붙입니다(<span class="mono">light_raw 0–1023 상대값</span>). <span class="mono">null</span>은 “측정 대기”, 연결 끊김은 “마지막 값 · 12초 전”으로 0과 구분합니다.</td></tr>
+      <tr><td>9241-110 기대 일치</td><td>명령 결과를 네 단계로 보여 줍니다: 전송 중 · 보드 적용(ack) · 오류 · 실물 확인은 사용자 몫. ack를 “LED 켜짐 확인”으로 표시하지 않습니다.</td></tr>
+      <tr><td>9241-110 오류 허용</td><td>기준값은 켜는 값 &lt; 끄는 값을 입력 단계에서 검사하고, 정지(STOP) 버튼은 항상 같은 자리에 둡니다. 재연결 때 예전 명령을 자동으로 다시 보내지 않습니다.</td></tr>
+      <tr><td>9241-110 제어 가능성</td><td>실시간 갱신을 일시정지할 수 있습니다(WCAG 2.2.2와 같은 요구).</td></tr>
+      <tr><td>9241-110 개인화</td><td>라이트/다크, 갱신 주기, 경고 소리를 사용자가 고릅니다.</td></tr>
+      <tr><td>WCAG 1.4.1 · 1.4.11</td><td>상태는 색만으로 구분하지 않고 글자와 모양을 함께 씁니다. 그래프 선·경계는 대비 3:1 이상, 글자는 4.5:1 이상.</td></tr>
+      <tr><td>WCAG 2.1.1 · 2.4.7</td><td>모든 제어를 키보드로 쓸 수 있고 초점 표시가 보입니다.</td></tr>
+      <tr><td>WCAG 2.4.11 <span class="pill">2.2 신규</span></td><td>고정 헤더가 초점 받은 요소를 가리지 않게 <span class="mono">scroll-padding-top</span>을 둡니다.</td></tr>
+      <tr><td>WCAG 2.5.7 <span class="pill">2.2 신규</span></td><td>기준값 슬라이더 옆에 숫자 입력과 ± 버튼을 둬서 끌지 않고도 바꿀 수 있게 합니다.</td></tr>
+      <tr><td>WCAG 2.5.8 <span class="pill">2.2 신규</span></td><td>모든 버튼·토글은 최소 24×24 CSS px.</td></tr>
+      <tr><td>WCAG 3.2.6 <span class="pill">2.2 신규</span></td><td>도움말(배선·명령 설명) 링크를 모든 화면의 같은 위치에 둡니다.</td></tr>
+      <tr><td>WCAG 3.3.7 · 3.3.8 <span class="pill">2.2 신규</span></td><td>COM 포트·보정값은 한 번 입력하면 기억합니다. 로그인이 생기면 퍼즐형 인증을 쓰지 않습니다.</td></tr>
+      <tr><td>WCAG 4.1.3</td><td>경고가 새로 생길 때만 <span class="mono">aria-live="polite"</span>로 알립니다. 1초마다 바뀌는 숫자는 읽어 주지 않습니다.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="ask" aria-labelledby="h-ask">
+  <h2 id="h-ask">정해야 할 것</h2>
+  <ol class="qs">
+    <li>어떤 안으로 갈까요? (A · B · C · D 또는 조합)</li>
+    <li>주 사용자는 누구인가요? 나 혼자, 수업 발표를 보는 강사·동료, 가족 같은 비전공자?</li>
+    <li>어디서 보나요? PC 한 대 옆 모니터, 휴대폰, 교실 TV?</li>
+    <li>보기만 할까요, 제어(LED·신호등·부저)까지 할까요?</li>
+    <li>기록은 얼마나 남길까요? 화면이 열려 있는 동안만, 아니면 하루·일주일 저장?</li>
+    <li>PC 연결 방식: Python 연결 프로그램과 Web Serial 중 무엇을 쓸까요?</li>
+  </ol>
+</section>
+</div>
+
+<script>
+(function(){
+const COLS='ABCDEFGHIJ', BX=520, ROW0=70, RS=24, CS=20, GROOVE=50;
+const U={x:20,y:170,w:290,h:190};
+const TOP=['SCL','SDA','AREF','GND','13','12','11','10','9','8','7','6','5','4','3','2','1','0'];
+const BOT=['IOREF','RESET','3V3','5V','GND','GND','VIN','A0','A1','A2','A3','A4','A5'];
+const SIG=['#1f6fd1','#d97706','#7c4dcc','#0f8a70','#c0397a','#8a6a12','#2563a8','#b4530a','#5b6b10','#7a3fa0'];
+const C5V='#d33b2c', CGND='#26302c', INK='#1f2a26', SUB='#5c6863', CARD='#eef3ee', CARDLINE='#b9c9bd';
+const NS='http://www.w3.org/2000/svg';
+const hx=c=>{const i=COLS.indexOf(c);return i<5?BX+i*CS:BX+4*CS+GROOVE+(i-5)*CS;};
+const hp=h=>({x:hx(h[0]),y:ROW0+parseInt(h.slice(1),10)*RS,L:COLS.indexOf(h[0])<5});
+function pin(name){
+  let n=name.replace(/^D/,'');
+  let i=TOP.indexOf(n); if(/^\d+$/.test(n)&&i>=0) return {x:82+i*12,y:U.y+14,top:true};
+  i=BOT.indexOf(name==='GND'?'GND':name); return {x:130+i*13,y:U.y+U.h-14,top:false};
+}
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const poly=(pts,color,w=3)=>{const d=pts.map(p=>p.join(',')).join(' ');
+  return `<polyline points="${d}" fill="none" stroke="#fbfcf8" stroke-width="${w+3}" stroke-linejoin="round" stroke-linecap="round"/><polyline points="${d}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"/>`;};
+const badge=(x,y,n,color)=>`<circle cx="${x}" cy="${y}" r="7.5" fill="#ffffff" stroke="${color}" stroke-width="2"/><text x="${x}" y="${y+3.2}" font-size="9" font-weight="700" text-anchor="middle" fill="${INK}">${n}</text>`;
+
+function render(spec){
+  const out=[];
+  const W=1150;
+  // board
+  const bx0=BX-30,bx1=hx('J')+30,by0=ROW0+RS-36,by1=ROW0+30*RS+22;
+  out.push(`<rect x="${bx0}" y="${by0}" width="${bx1-bx0}" height="${by1-by0}" rx="10" fill="#efece2" stroke="#cfc9b8"/>`);
+  out.push(`<rect x="${hx('E')+12}" y="${by0+8}" width="${GROOVE-24}" height="${by1-by0-16}" rx="4" fill="#ddd8c8"/>`);
+  for(const c of COLS) out.push(`<text x="${hx(c)}" y="${ROW0+RS-18}" font-size="10" font-weight="600" text-anchor="middle" fill="${SUB}">${c}</text>`);
+  for(let r=1;r<=30;r++){const y=ROW0+r*RS;
+    out.push(`<rect x="${hx('A')-8}" y="${y-7}" width="${4*CS+16}" height="14" rx="3" fill="#d6e8c2"/><rect x="${hx('F')-8}" y="${y-7}" width="${4*CS+16}" height="14" rx="3" fill="#d6e8c2"/>`);
+    out.push(`<text x="${(hx('E')+hx('F'))/2}" y="${y+3}" font-size="9" text-anchor="middle" fill="${SUB}">${r}</text>`);
+    for(const c of COLS) out.push(`<circle cx="${hx(c)}" cy="${y}" r="2.4" fill="#86928a"/>`);
+  }
+  // UNO
+  out.push(`<rect x="${U.x-12}" y="${U.y+28}" width="44" height="40" rx="3" fill="#b9c0c4" stroke="#8d969b"/>`);
+  out.push(`<rect x="${U.x-8}" y="${U.y+U.h-58}" width="40" height="36" rx="4" fill="#2b2b2b"/>`);
+  out.push(`<rect x="${U.x}" y="${U.y}" width="${U.w}" height="${U.h}" rx="10" fill="#1d6f8f" stroke="#145570"/>`);
+  out.push(`<rect x="76" y="${U.y+8}" width="216" height="12" rx="2" fill="#1a1a1a"/><rect x="124" y="${U.y+U.h-20}" width="168" height="12" rx="2" fill="#1a1a1a"/>`);
+  out.push(`<rect x="150" y="${U.y+95}" width="120" height="22" rx="2" fill="#1a1a1a"/>`);
+  out.push(`<text x="${U.x+70}" y="${U.y+82}" font-size="15" font-weight="700" fill="#ffffff">UNO R3</text>`);
+  out.push(`<text x="${U.x+70}" y="${U.y+140}" font-size="8.5" fill="#cfe6ef">위: D0–D13 · 아래: 전원·A0–A5</text>`);
+  const used=new Set(spec.conns.filter(c=>c.from.startsWith('UNO:')).map(c=>c.from.slice(4)));
+  TOP.forEach((n,i)=>{const x=82+i*12,on=used.has('D'+n);out.push(`<rect x="${x-3}" y="${U.y+11}" width="6" height="6" fill="${on?'#ffd24a':'#666'}"/><text transform="rotate(-90 ${x} ${U.y+26})" x="${x}" y="${U.y+29}" font-size="7" text-anchor="end" fill="${on?'#ffffff':'#a9cbd8'}" font-weight="${on?700:400}">${n}</text>`);});
+  BOT.forEach((n,i)=>{const x=130+i*13,on=used.has(n)&&(n!=='GND'||i===4);out.push(`<rect x="${x-3}" y="${U.y+U.h-17}" width="6" height="6" fill="${on?'#ffd24a':'#666'}"/><text transform="rotate(-90 ${x} ${U.y+U.h-26})" x="${x}" y="${U.y+U.h-23}" font-size="7" text-anchor="start" fill="${on?'#ffffff':'#a9cbd8'}" font-weight="${on?700:400}">${n}</text>`);});
+  out.push(`<text x="${U.x}" y="${U.y-74}" font-size="12" font-weight="600" fill="${INK}">UNO · USB 왼쪽</text>`);
+
+  // parts
+  const cards=[];
+  for(const p of spec.parts){
+    const hs=Object.values(p.holes).map(hp);
+    const a=hs[0],b=hs[hs.length-1],mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    if(p.type==='R'){out.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#8b6b3e" stroke-width="2"/><rect x="${mx-7}" y="${my-11}" width="14" height="22" rx="4" fill="#ead2a8" stroke="#9c7a4a"/><text x="${mx}" y="${my+3}" font-size="8" text-anchor="middle" fill="${INK}">R</text>`);}
+    else if(p.type==='LED'){out.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#777" stroke-width="2"/><circle cx="${mx}" cy="${my}" r="8" fill="${p.color}" stroke="${INK}" stroke-width="1"/><text x="${a.x+9}" y="${a.y-3}" font-size="10" font-weight="700" fill="${INK}">+</text>`);}
+    else if(p.type==='BUZ'){out.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#777" stroke-width="2"/><circle cx="${mx}" cy="${my}" r="10" fill="#2b2b2b"/><circle cx="${mx}" cy="${my}" r="3" fill="#777"/><text x="${a.x+11}" y="${a.y-3}" font-size="10" font-weight="700" fill="${INK}">+</text>`);}
+    else if(p.type==='CDS'){out.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#777" stroke-width="2"/><rect x="${mx-10}" y="${my-8}" width="20" height="16" rx="8" fill="#e3a93c" stroke="#9a6a14"/><text x="${mx}" y="${my+3}" font-size="6.5" text-anchor="middle" fill="${INK}">CdS</text>`);}
+    else if(p.type==='BTN'){const xs=hs.map(h=>h.x),ys=hs.map(h=>h.y),x0=Math.min(...xs)-8,y0=Math.min(...ys)-8,w=Math.max(...xs)-x0+8,h=Math.max(...ys)-y0+8;out.push(`<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="4" fill="#d4d7d5" fill-opacity=".9" stroke="#7f8783"/><circle cx="${x0+w/2}" cy="${y0+h/2}" r="9" fill="#333"/>`);}
+    else if(p.type==='POT'){const y0=a.y-9,h=b.y-a.y+18;out.push(`<rect x="${a.x-9}" y="${y0}" width="18" height="${h}" rx="5" fill="#c9dcef" fill-opacity=".85" stroke="#3e6d9e"/><circle cx="${a.x}" cy="${my}" r="6" fill="#3e6d9e"/>`);}
+    if(p.type==='MOD'){hs.forEach(h=>out.push(`<rect x="${h.x-5}" y="${h.y-5}" width="10" height="10" rx="1.5" fill="${p.color||'#34407a'}" stroke="#ffffff" stroke-width="1"/>`));}
+    else hs.forEach(h=>out.push(`<circle cx="${h.x}" cy="${h.y}" r="3" fill="#2f3a35"/>`));
+    cards.push({p,ax:Math.max(...hs.map(h=>h.x))+(p.type==='MOD'?7:10),ay:hs.reduce((s,h)=>s+h.y,0)/hs.length});
+  }
+
+  // connections
+  const jumpers=spec.conns.filter(c=>!c.from.startsWith('UNO:'));
+  const unos=spec.conns.filter(c=>c.from.startsWith('UNO:'));
+  let jl=0; const rowStartCount={};
+  const color=(c,i)=>c.role==='5v'?C5V:c.role==='gnd'?CGND:SIG[i%SIG.length];
+  let sigI=0; const colors=new Map();
+  spec.conns.forEach(c=>{colors.set(c,c.role==='sig'?SIG[(sigI++)%SIG.length]:color(c,0));});
+  const wires=[], badges=[];
+  // board jumpers
+  for(const c of jumpers){
+    let h1=hp(c.from),h2=hp(c.to); const col=colors.get(c); const n=spec.conns.indexOf(c)+1;
+    if(h1.L!==h2.L && h1.y===h2.y && Math.abs(h1.x-h2.x)<=GROOVE+1){wires.push(poly([[h1.x,h1.y],[h2.x,h2.y]],col));badges.push(badge((h1.x+h2.x)/2,h1.y-11,n,col));continue;}
+    if(h1.L!==h2.L && h1.y===h2.y){const y=h1.y+9;wires.push(poly([[h1.x,h1.y],[h1.x,y],[h2.x,y],[h2.x,h2.y]],col));badges.push(badge((h1.x+h2.x)/2,y,n,col));continue;}
+    const k=rowStartCount[c.from.slice(1)+(h1.L?'L':'R')]=(rowStartCount[c.from.slice(1)+(h1.L?'L':'R')]||0)+1;
+    const dy=2+k*3;
+    if(h1.L&&h2.L){const lx=BX-36-jl*6;jl++;wires.push(poly([[h1.x,h1.y],[h1.x,h1.y+dy],[lx,h1.y+dy],[lx,h2.y],[h2.x,h2.y]],col));badges.push(badge(lx+12,h2.y-0.01,n,col));}
+    else if(!h1.L&&!h2.L){const rx=hx('J')+38+(jl%6)*6;jl++;wires.push(poly([[h1.x,h1.y],[h1.x,h1.y+dy],[rx,h1.y+dy],[rx,h2.y],[h2.x,h2.y]],col));badges.push(badge(rx-12,h2.y,n,col));}
+    else{ if(!h1.L){const t=h1;h1=h2;h2=t;}
+      const lx=BX-36-jl*6;jl++;const yy=h2.y-8;
+      const d0=(c.from===spec.conns.find(x=>x===c).from&&hp(c.from).L)?dy:0;
+      wires.push(poly([[h1.x,h1.y],[h1.x,h1.y+d0],[lx,h1.y+d0],[lx,yy],[h2.x,yy],[h2.x,h2.y]],col));badges.push(badge(lx+12,yy,n,col));}
+  }
+  // UNO wires
+  const laneStart=BX-36-jl*6-10;
+  const tops=unos.filter(c=>pin(c.from.slice(4)).top).sort((a,b)=>pin(b.from.slice(4)).x-pin(a.from.slice(4)).x);
+  const bots=unos.filter(c=>!pin(c.from.slice(4)).top).sort((a,b)=>pin(b.from.slice(4)).x-pin(a.from.slice(4)).x);
+  const lanes=[];let li=0;
+  const routeU=(c,stub,lane)=>{const p=pin(c.from.slice(4)),t=hp(c.to),col=colors.get(c),n=spec.conns.indexOf(c)+1;
+    const ys=p.top?U.y-8-stub*7:U.y+U.h+8+stub*7; const ty=t.L?t.y:t.y-8;
+    const pts=[[p.x,p.y],[p.x,ys],[lane,ys],[lane,ty],[t.x,ty]]; if(!t.L) pts.push([t.x,t.y]);
+    wires.push(poly(pts,col)); badges.push(badge(lane+13,ty,n,col));};
+  // lanes: later stubs closer to board
+  const total=tops.length+bots.length;
+  tops.forEach((c,i)=>routeU(c,i,laneStart-(tops.length-1-i)*8-bots.length*8));
+  bots.forEach((c,i)=>routeU(c,i,laneStart-(bots.length-1-i)*8));
+  out.push(...wires);
+  out.push(...badges);
+  // hole end dots for wires
+  spec.conns.forEach(c=>{[c.to].concat(c.from.startsWith('UNO:')?[]:[c.from]).forEach(h=>{const q=hp(h);out.push(`<circle cx="${q.x}" cy="${q.y}" r="3.2" fill="${colors.get(c)}" stroke="#fff" stroke-width="1"/>`);});});
+
+  // cards
+  const CX=810, CW=320; let cy=56; const leaders=[], cardEls=[];
+  for(const {p,ax,ay} of cards){
+    const lines=Object.entries(p.holes); const h=26+lines.length*15+8;
+    leaders.push(`<polyline points="${ax},${ay} ${CX-14},${ay} ${CX},${cy+16}" fill="none" stroke="#7d8f84" stroke-width="1" stroke-dasharray="3 3"/>`);
+    let s=`<rect x="${CX}" y="${cy}" width="${CW}" height="${h}" rx="6" fill="${CARD}" stroke="${CARDLINE}"/>`;
+    s+=`<text x="${CX+12}" y="${cy+18}" font-size="11.5" font-weight="700" fill="${INK}">${esc(p.name)}</text>`;
+    lines.forEach(([k,v],i)=>{s+=`<text x="${CX+14}" y="${cy+36+i*15}" font-size="10" fill="${SUB}">${esc(k)} <tspan fill="${INK}" font-weight="600">→ ${v}</tspan>${p.via&&p.via[k]?` <tspan fill="${SUB}">(${esc(p.via[k])})</tspan>`:''}</text>`;});
+    cardEls.push(s); cy+=h+8;
+  }
+  const H=Math.max(by1+50,cy+20);
+  out.push(...leaders,...cardEls);
+  out.push(`<text x="${bx0}" y="${by1+22}" font-size="10" fill="${SUB}">연두 띠 = 같은 금속판 · 가운데 홈 양쪽은 분리 · 빨강 5V · 검정 GND · 동그라미 숫자 = 아래 표의 연결 순서</text>`);
+  const head=`<text x="20" y="28" font-size="16" font-weight="700" fill="${INK}">${esc(spec.title)}</text><text x="20" y="46" font-size="10.5" fill="${SUB}">${esc(spec.sub)}</text>`;
+  return `<svg xmlns="${NS}" viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="t-${spec.id} d-${spec.id}"><title id="t-${spec.id}">${esc(spec.title)} 빵판 배선도</title><desc id="d-${spec.id}">왼쪽 UNO와 세로 빵판 연결 그림. 같은 내용이 아래 연결 표에 글로 있습니다.</desc><rect width="${W}" height="${H}" fill="#fbfcf8"/>${head}${out.join('')}</svg>`;
+}
+
+function table(spec){
+  let sigI=0;
+  const rows=spec.conns.map((c,i)=>{const col=c.role==='5v'?C5V:c.role==='gnd'?CGND:SIG[(sigI++)%SIG.length];
+    const from=c.from.startsWith('UNO:')?'UNO '+c.from.slice(4):'빵판 '+c.from;
+    return `<tr><td>${i+1}</td><td><span class="sw" style="background:${col}"></span>${from}</td><td>빵판 ${c.to}</td><td>${esc(c.note)}</td></tr>`;}).join('');
+  const mods=spec.parts.filter(p=>p.type==='MOD').map(p=>Object.entries(p.holes).map(([k,v])=>`<tr><td>${esc(p.name)}</td><td>${esc(k)}</td><td>${v}</td></tr>`).join('')).join('');
+  return `<details open><summary>한 선씩 연결 (수–수 점퍼, ${spec.conns.length}개)</summary><table><thead><tr><th scope="col">순서</th><th scope="col">출발</th><th scope="col">도착</th><th scope="col">역할</th></tr></thead><tbody>${rows}</tbody></table></details>`+
+   (mods?`<details><summary>모듈 핀 → 빵판 (암–수 점퍼, ${spec.parts.filter(p=>p.type==='MOD').reduce((s,p)=>s+Object.keys(p.holes).length,0)}개)</summary><table><thead><tr><th scope="col">모듈</th><th scope="col">핀</th><th scope="col">구멍</th></tr></thead><tbody>${mods}</tbody></table></details>`:'');
+}
+
+const P01={id:'A',title:'P01 · 책상 환경·조명 도우미',sub:'강의 자료 P01과 동일 · USB 분리 후 조립 · 모듈 카드는 핀 이름을 펼친 그림',
+ parts:[
+  {name:'LED 1kΩ',type:'R',holes:{'한쪽':'C4','다른쪽':'C7'},via:{'한쪽':'UNO D8'}},
+  {name:'빨강 LED',type:'LED',color:'#e5483a',holes:{'긴 다리 +':'E7','짧은 다리 −':'E8'}},
+  {name:'택트 스위치',type:'BTN',holes:{'왼쪽 위':'E10','왼쪽 아래':'E12','오른쪽 위':'F10','오른쪽 아래':'F12'}},
+  {name:'10kΩ 가변저항',type:'POT',holes:{'바깥1 GND':'E14','가운데 신호':'E16','바깥2 5V':'E18'}},
+  {name:'CdS 조도 센서',type:'CDS',holes:{'다리1':'E20','다리2':'E22'}},
+  {name:'CdS 10kΩ',type:'R',holes:{'한쪽':'C22','다른쪽':'C24'}},
+  {name:'DHT11 모듈',type:'MOD',color:'#2f6db3',holes:{'VCC +':'J14','GND −':'J16','DATA S':'J18'}},
+  {name:'LCD1602 I2C 백팩',type:'MOD',color:'#3d3f8f',holes:{'GND':'J20','VCC':'J22','SDA':'J24','SCL':'J26'}}],
+ conns:[
+  {from:'UNO:D8',to:'A4',role:'sig',note:'D8 출력 → 1kΩ → LED'},
+  {from:'UNO:D2',to:'A10',role:'sig',note:'버튼 입력(INPUT_PULLUP)'},
+  {from:'UNO:A0',to:'A16',role:'sig',note:'가변저항 가운데 전압'},
+  {from:'UNO:A1',to:'A22',role:'sig',note:'CdS와 10kΩ 사이 전압'},
+  {from:'UNO:D4',to:'F18',role:'sig',note:'DHT11 데이터'},
+  {from:'UNO:A4',to:'F24',role:'sig',note:'I2C SDA'},
+  {from:'UNO:A5',to:'F26',role:'sig',note:'I2C SCL'},
+  {from:'UNO:5V',to:'A1',role:'5v',note:'5V 분배 묶음(1번 줄 A–E)'},
+  {from:'B1',to:'A18',role:'5v',note:'가변저항 5V'},
+  {from:'C1',to:'A20',role:'5v',note:'CdS 5V'},
+  {from:'D1',to:'F14',role:'5v',note:'DHT11 VCC'},
+  {from:'E1',to:'F1',role:'5v',note:'홈 건너 5V 묶음 연장'},
+  {from:'G1',to:'F22',role:'5v',note:'LCD VCC'},
+  {from:'UNO:GND',to:'F2',role:'gnd',note:'GND 분배 묶음(2번 줄 F–J)'},
+  {from:'G2',to:'A8',role:'gnd',note:'LED − 쪽 GND'},
+  {from:'H2',to:'J10',role:'gnd',note:'버튼 GND'},
+  {from:'I2',to:'A14',role:'gnd',note:'가변저항 GND'},
+  {from:'J2',to:'A2',role:'gnd',note:'홈 건너 GND 묶음 연장'},
+  {from:'B2',to:'A24',role:'gnd',note:'CdS 10kΩ GND'},
+  {from:'C2',to:'F16',role:'gnd',note:'DHT11 GND'},
+  {from:'D2',to:'F20',role:'gnd',note:'LCD GND'}]};
+
+const PL1={id:'B',title:'PL1 · 화분 돌봄 스테이션 (제안)',sub:'K07·K05·K09·K11·K12 단품 배선을 합친 설계 · 실물 핀 이름 확인 후 조립 · USB 분리 상태에서',
+ parts:[
+  {name:'수위 센서',type:'MOD',color:'#b23b3b',holes:{'VCC +':'E4','GND −':'E6','S':'E8'}},
+  {name:'CdS 조도 센서',type:'CDS',holes:{'다리1':'E10','다리2':'E12'}},
+  {name:'CdS 10kΩ',type:'R',holes:{'한쪽':'C12','다른쪽':'C14'}},
+  {name:'수동 피에조 부저',type:'BUZ',holes:{'신호 +':'E16','−':'E18'}},
+  {name:'부저 1kΩ',type:'R',holes:{'한쪽':'C16','다른쪽':'C20'},via:{'다른쪽':'UNO D8'}},
+  {name:'DHT11 모듈',type:'MOD',color:'#2f6db3',holes:{'VCC +':'J4','GND −':'J6','DATA S':'J8'}},
+  {name:'R 1kΩ',type:'R',holes:{'한쪽':'H10','다른쪽':'H12'},via:{'한쪽':'UNO D5'}},
+  {name:'G 1kΩ',type:'R',holes:{'한쪽':'H14','다른쪽':'H16'},via:{'한쪽':'UNO D6'}},
+  {name:'B 1kΩ',type:'R',holes:{'한쪽':'H18','다른쪽':'H20'},via:{'한쪽':'UNO D9'}},
+  {name:'RGB LED 모듈 (공통 −)',type:'MOD',color:'#6b3fa0',holes:{'R':'J12','G':'J16','B':'J20','공통 −':'J24'}}],
+ conns:[
+  {from:'UNO:A0',to:'A8',role:'sig',note:'수위 센서 S'},
+  {from:'UNO:A1',to:'A12',role:'sig',note:'CdS와 10kΩ 사이 전압'},
+  {from:'UNO:D8',to:'A20',role:'sig',note:'tone() 출력 → 1kΩ → 부저'},
+  {from:'UNO:D4',to:'F8',role:'sig',note:'DHT11 데이터'},
+  {from:'UNO:D5',to:'F10',role:'sig',note:'RGB 빨강 PWM'},
+  {from:'UNO:D6',to:'F14',role:'sig',note:'RGB 초록 PWM'},
+  {from:'UNO:D9',to:'F18',role:'sig',note:'RGB 파랑 PWM'},
+  {from:'UNO:5V',to:'A1',role:'5v',note:'5V 분배 묶음(1번 줄 A–E)'},
+  {from:'UNO:GND',to:'A2',role:'gnd',note:'GND 분배 묶음(2번 줄 A–E)'},
+  {from:'E1',to:'F1',role:'5v',note:'홈 건너 5V 묶음 연장'},
+  {from:'E2',to:'F2',role:'gnd',note:'홈 건너 GND 묶음 연장'},
+  {from:'B1',to:'A4',role:'5v',note:'수위 센서 VCC'},
+  {from:'B2',to:'A6',role:'gnd',note:'수위 센서 GND'},
+  {from:'C1',to:'A10',role:'5v',note:'CdS 5V'},
+  {from:'C2',to:'A14',role:'gnd',note:'CdS 10kΩ GND'},
+  {from:'D2',to:'A18',role:'gnd',note:'부저 −'},
+  {from:'G1',to:'F4',role:'5v',note:'DHT11 VCC'},
+  {from:'G2',to:'F6',role:'gnd',note:'DHT11 GND'},
+  {from:'H2',to:'F24',role:'gnd',note:'RGB 공통 −'}]};
+
+const PL2={id:'C',title:'PL2 · 교실 쾌적도 신호등 (제안)',sub:'K08·K09·K15 + P03 LED 핀을 합친 설계 · 모듈은 F–J, LED는 A–E · USB 분리 상태에서',
+ parts:[
+  {name:'빨강 1kΩ',type:'R',holes:{'한쪽':'C10','다른쪽':'C12'},via:{'한쪽':'UNO D10'}},
+  {name:'빨강 LED',type:'LED',color:'#e5483a',holes:{'긴 +':'E12','짧은 −':'E13'}},
+  {name:'노랑 1kΩ',type:'R',holes:{'한쪽':'C15','다른쪽':'C17'},via:{'한쪽':'UNO D11'}},
+  {name:'노랑 LED',type:'LED',color:'#f2c230',holes:{'긴 +':'E17','짧은 −':'E18'}},
+  {name:'초록 1kΩ',type:'R',holes:{'한쪽':'C20','다른쪽':'C22'},via:{'한쪽':'UNO D12'}},
+  {name:'초록 LED',type:'LED',color:'#3fae4f',holes:{'긴 +':'E22','짧은 −':'E23'}},
+  {name:'소리 감지 모듈',type:'MOD',color:'#a0522d',holes:{'VCC +':'J4','GND −':'J6','AO':'J8'}},
+  {name:'DHT11 모듈',type:'MOD',color:'#2f6db3',holes:{'VCC +':'J10','GND −':'J12','DATA S':'J14'}},
+  {name:'LCD1602 I2C 백팩',type:'MOD',color:'#3d3f8f',holes:{'GND':'J16','VCC':'J18','SDA':'J20','SCL':'J22'}}],
+ conns:[
+  {from:'UNO:A0',to:'F8',role:'sig',note:'소리 모듈 AO'},
+  {from:'UNO:D4',to:'F14',role:'sig',note:'DHT11 데이터'},
+  {from:'UNO:A4',to:'F20',role:'sig',note:'I2C SDA'},
+  {from:'UNO:A5',to:'F22',role:'sig',note:'I2C SCL'},
+  {from:'UNO:D10',to:'A10',role:'sig',note:'빨강 LED → 1kΩ'},
+  {from:'UNO:D11',to:'A15',role:'sig',note:'노랑 LED → 1kΩ'},
+  {from:'UNO:D12',to:'A20',role:'sig',note:'초록 LED → 1kΩ'},
+  {from:'UNO:5V',to:'A1',role:'5v',note:'5V 분배 묶음(1번 줄 A–E)'},
+  {from:'UNO:GND',to:'A2',role:'gnd',note:'GND 분배 묶음(2번 줄 A–E)'},
+  {from:'E1',to:'F1',role:'5v',note:'홈 건너 5V 묶음 연장'},
+  {from:'E2',to:'F2',role:'gnd',note:'홈 건너 GND 묶음 연장'},
+  {from:'G1',to:'F4',role:'5v',note:'소리 모듈 VCC'},
+  {from:'G2',to:'F6',role:'gnd',note:'소리 모듈 GND'},
+  {from:'H1',to:'F10',role:'5v',note:'DHT11 VCC'},
+  {from:'H2',to:'F12',role:'gnd',note:'DHT11 GND'},
+  {from:'I2',to:'F16',role:'gnd',note:'LCD GND'},
+  {from:'I1',to:'F18',role:'5v',note:'LCD VCC'},
+  {from:'B2',to:'A13',role:'gnd',note:'빨강 LED −'},
+  {from:'C2',to:'A18',role:'gnd',note:'노랑 LED −'},
+  {from:'D2',to:'A23',role:'gnd',note:'초록 LED −'}]};
+
+[[P01,'svgA','tblA'],[PL1,'svgB','tblB'],[PL2,'svgC','tblC']].forEach(([s,a,b])=>{
+  try{document.getElementById(a).innerHTML=render(s);document.getElementById(b).innerHTML=table(s);}
+  catch(e){document.getElementById(a).textContent='그림을 그리지 못했습니다: '+e.message;}
+});
+})();
+</script>
